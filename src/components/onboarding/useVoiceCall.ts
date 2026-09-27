@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type Dispatch } from "react";
 import { fetchVoiceSession, transcribe } from "@/lib/api";
-import { finishEarly, initialEngine, OPENER, respond, resumeTurn, type EngineState } from "@/lib/conversation/engine";
+import { AGENT_OPENER, finishEarly, INTRO, initialEngine, OPENER, respond, resumeTurn, type EngineState } from "@/lib/conversation/engine";
 import { reviewFinish } from "@/lib/conversation/finish-gate";
 import { SAMPLE_ANSWER } from "@/lib/conversation/samples";
 import type { ChatMessage } from "@/lib/schema";
@@ -339,7 +339,10 @@ export function useVoiceCall({ state, dispatch, transcriptionAvailable, voiceAva
           : "Welcome them back in a few words, then continue with whatever is still missing. Don't repeat questions they already answered.",
       );
     } else {
-      s.reply(`Say exactly this and nothing else: "${OPENER}"`);
+      // A beat of quiet after connecting, like a person picking up, then the intro.
+      await delay(700);
+      if (!alive(g)) return true;
+      s.reply(`Say exactly this and nothing else: "${AGENT_OPENER}"`);
     }
     return true;
   }
@@ -474,7 +477,7 @@ export function useVoiceCall({ state, dispatch, transcriptionAvailable, voiceAva
     await delay(500);
     if (!alive(g)) return;
     if (engineRef.current.done) return wrapUpLocal(g);
-    let line = OPENER;
+    let line = `${INTRO} ${OPENER}`;
     if (messagesRef.current.length > 0) {
       const turn = resumeTurn(engineRef.current);
       setEngine(turn.state);

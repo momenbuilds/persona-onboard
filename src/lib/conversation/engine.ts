@@ -46,6 +46,12 @@ export type Heard = {
 export type Turn = { state: EngineState; reply: string; heard?: Heard };
 
 export const WELCOME_LINE = "hey, i'm Persona. want to do a quick call so i can get to know you?";
+/** Persona says who it is before asking anything. */
+export const INTRO =
+  "hey, i'm Persona, your personal assistant. i take the busywork off your plate, like email, reminders and planning, so you get your time back.";
+/** The live call's first line: the intro, then one easy question. */
+export const AGENT_OPENER = `${INTRO} to get started, what should i call you?`;
+/** The offline engine's first question (its answer parsing is built around it). */
 export const OPENER = "what does a normal day look like for you, and what do you want help with?";
 const MAX_USER_TURNS = 6;
 

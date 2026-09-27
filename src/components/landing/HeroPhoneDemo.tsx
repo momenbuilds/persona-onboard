@@ -8,13 +8,13 @@ import { PersonaOrb, type OrbState } from "@/components/orb/PersonaOrb";
 import { Waveform } from "@/components/orb/Waveform";
 import { PhoneFrame } from "@/components/PhoneFrame";
 import { Bubble } from "@/components/ui/Bubble";
-import { OPENER } from "@/lib/conversation/engine";
 import { createLevelSource, syntheticSpeech } from "@/lib/voice/level";
 
 type Line = { from: "persona" | "user"; text: string };
 
 const LINES: Line[] = [
-  { from: "persona", text: OPENER },
+  // A shorter take on the call's real intro, sized for the phone mockup.
+  { from: "persona", text: "hey, i'm Persona, your personal assistant. what should i call you?" },
   {
     from: "user",
     text: "i'm Maya. up at 6, then shoots and emails for my fashion brand. i need help staying consistent with content.",
