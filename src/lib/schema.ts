@@ -111,5 +111,5 @@ export type TranscribeResponse =
 export type HealthResponse = { transcription: boolean; understanding: boolean; voice: boolean };
 
 export type VoiceAgentSessionResponse =
-  | { ok: true; agentId: string; token: string; systemPrompt: string }
+  | { ok: true; session: Record<string, unknown>; token: string; systemPrompt: string }
   | { ok: false; code: "NO_KEY" | "RATE_LIMITED" | "UPSTREAM"; message: string };

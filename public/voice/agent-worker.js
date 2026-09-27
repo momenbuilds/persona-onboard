@@ -39,7 +39,7 @@ self.onmessage = (e) => {
     case "connect": {
       ws = new WebSocket(m.url);
       ws.onopen = () => {
-        sendJson({ type: "session.update", session: { agent_id: m.agentId } });
+        sendJson({ type: "session.update", session: m.session });
         self.postMessage({ type: "ws.open" });
       };
       ws.onmessage = (ev) => {

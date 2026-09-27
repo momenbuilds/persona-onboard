@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import type { VoiceAgentSessionResponse } from "@/lib/schema";
 import {
-  ensureOnboardingAgent,
   hasVoiceAgentKey,
   mintVoiceToken,
   ONBOARDING_PROMPT,
+  onboardingSession,
   VoiceAgentError,
 } from "@/lib/server/voice-agent";
 
@@ -28,7 +28,7 @@ function reply(body: VoiceAgentSessionResponse, status = 200) {
   return NextResponse.json(body, { status, headers: { "cache-control": "no-store" } });
 }
 
-/** Returns the onboarding agent id plus a fresh single-use token for one browser session. */
+/** Returns the inline onboarding session config plus a fresh single-use token for one browser session. */
 export async function GET(request: Request) {
   if (!hasVoiceAgentKey()) {
     return reply({ ok: false, code: "NO_KEY", message: "Voice agent isn't configured (ASSEMBLYAI_API_KEY)." }, 503);
@@ -37,10 +37,10 @@ export async function GET(request: Request) {
   if (limited(ip)) return reply({ ok: false, code: "RATE_LIMITED", message: "Too many calls, try again in a few minutes." }, 429);
 
   try {
-    const [agentId, token] = await Promise.all([ensureOnboardingAgent(), mintVoiceToken()]);
+    const token = await mintVoiceToken();
     // The base prompt isn't secret; the client re-sends it with the running transcript
     // (session.update) so the agent keeps context across typing and reconnects.
-    return reply({ ok: true, agentId, token, systemPrompt: ONBOARDING_PROMPT });
+    return reply({ ok: true, session: onboardingSession(), token, systemPrompt: ONBOARDING_PROMPT });
   } catch (error) {
     const status = error instanceof VoiceAgentError ? error.status : 502;
     console.error("[voice-agent]", error instanceof Error ? error.message : error);

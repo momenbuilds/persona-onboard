@@ -85,7 +85,7 @@ export class VoiceAgentSession {
   private deviceId: string | null = null;
 
   /** Uses the AudioContext/mic primed in the user's click (see prime.ts) when available. */
-  async connect({ agentId, token }: { agentId: string; token: string }) {
+  async connect({ session, token }: { session: Record<string, unknown>; token: string }) {
     const primed = takePrimedAudio();
     const Ctx = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
     this.ctx = primed?.ctx ?? new Ctx();
@@ -128,7 +128,7 @@ export class VoiceAgentSession {
       worker.onerror = () => {
         if (!this.ready) reject(new Error("voice worker failed to start"));
       };
-      worker.postMessage({ type: "connect", url: `${WS_URL}?token=${encodeURIComponent(token)}`, agentId });
+      worker.postMessage({ type: "connect", url: `${WS_URL}?token=${encodeURIComponent(token)}`, session });
     });
     window.addEventListener("pagehide", this.pageHide);
   }

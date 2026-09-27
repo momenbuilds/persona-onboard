@@ -9,7 +9,6 @@ import { POST as transcribeRoute } from "@/app/api/transcribe/route";
 import { GET as voiceAgentRoute } from "@/app/api/voice-agent/route";
 import { POST as chatRoute } from "@/app/api/chat/route";
 import { wantsDocument } from "@/lib/chat/protocol";
-import { ensureOnboardingAgent } from "@/lib/server/voice-agent";
 
 const messages: ChatMessage[] = [
   { id: "1", role: "persona", text: "what does a normal day look like for you, and what do you want help with?" },
@@ -124,7 +123,6 @@ describe("AssemblyAI voice agent (server)", () => {
   afterEach(() => {
     vi.unstubAllEnvs();
     vi.unstubAllGlobals();
-    (globalThis as unknown as { __personaAgents?: Map<string, unknown> }).__personaAgents?.clear();
   });
 
   it("returns a clean NO_KEY 503 without a key", async () => {
@@ -134,24 +132,10 @@ describe("AssemblyAI voice agent (server)", () => {
     expect(await res.json()).toMatchObject({ ok: false, code: "NO_KEY" });
   });
 
-  it("creates the onboarding agent once, then reuses it; mints a single-use token", async () => {
+  it("returns an inline session config and a single-use token, never the key", async () => {
     vi.stubEnv("ASSEMBLYAI_API_KEY", "aai-key");
-    const created: { name?: string; voice?: unknown; tools?: { name: string }[] }[] = [];
     const fetchMock = vi.fn(async (url: string | URL, init?: RequestInit) => {
       const u = String(url);
-      if (u.includes("/v1/agents?") && (!init?.method || init.method === "GET")) {
-        const agents = created.map((c, i) => ({ id: `agent_${i}`, name: c.name }));
-        return new Response(JSON.stringify({ agents, has_more: false, response_metadata: { next_cursor: "" } }));
-      }
-      const byId = u.match(/\/v1\/agents\/(agent_\d+)$/);
-      if (byId) {
-        const known = Number(byId[1].slice(6)) < created.length;
-        return new Response(JSON.stringify(known ? { id: byId[1] } : { code: "agent_not_found" }), { status: known ? 200 : 404 });
-      }
-      if (u.endsWith("/v1/agents") && init?.method === "POST") {
-        created.push(JSON.parse(String(init.body)));
-        return new Response(JSON.stringify({ id: `agent_${created.length - 1}` }), { status: 201 });
-      }
       if (u.includes("/v1/token")) {
         expect((init?.headers as Record<string, string>).Authorization).toBe("Bearer aai-key");
         expect(u).toContain("expires_in_seconds=120");
@@ -163,42 +147,14 @@ describe("AssemblyAI voice agent (server)", () => {
 
     const res = await voiceAgentRoute(new Request("http://x/api/voice-agent"));
     const body = await res.json();
-    expect(body).toMatchObject({ ok: true, agentId: "agent_0", token: "tok_123" });
+    expect(body).toMatchObject({ ok: true, token: "tok_123" });
     expect(body.systemPrompt).toMatch(/You are Persona/);
+    expect(body.session.system_prompt).toBe(body.systemPrompt);
+    expect(body.session.output).toEqual({ type: "audio", voice: "alba" });
+    expect(body.session.tools[0]).toMatchObject({ type: "function", name: "finish_onboarding" });
     expect(JSON.stringify(body)).not.toContain("aai-key");
-    expect(created).toHaveLength(1);
-    expect(created[0].voice).toEqual({ voice_id: "alba" });
-    expect(created[0].tools?.[0].name).toBe("finish_onboarding");
-
-    // Cache cleared → found by name via list, not created again.
-    (globalThis as unknown as { __personaAgents?: Map<string, unknown> }).__personaAgents?.clear();
-    expect(await ensureOnboardingAgent()).toBe("agent_0");
-    expect(created).toHaveLength(1);
-  });
-
-  it("recreates the agent when the cached id no longer exists", async () => {
-    vi.stubEnv("ASSEMBLYAI_API_KEY", "aai-key");
-    let posts = 0;
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async (url: string | URL, init?: RequestInit) => {
-        const u = String(url);
-        if (u.includes("/v1/agents?")) return new Response(JSON.stringify({ agents: [], has_more: false }));
-        if (u.endsWith("/v1/agents/agent_gone")) return new Response("{}", { status: 404 });
-        if (u.endsWith("/v1/agents/agent_new")) return new Response(JSON.stringify({ id: "agent_new" }));
-        if (u.endsWith("/v1/agents") && init?.method === "POST") {
-          posts++;
-          return new Response(JSON.stringify({ id: "agent_new" }), { status: 201 });
-        }
-        throw new Error(`unexpected ${u}`);
-      }),
-    );
-    const agents = (globalThis as unknown as { __personaAgents: Map<string, { id: string; checkedAt: number }> }).__personaAgents;
-    await ensureOnboardingAgent().catch(() => undefined);
-    const [name] = [...agents.keys()];
-    agents.set(name, { id: "agent_gone", checkedAt: 0 });
-    expect(await ensureOnboardingAgent()).toBe("agent_new");
-    expect(posts).toBe(2);
+    // No stored agents: only the token endpoint is called.
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it("maps upstream failures to 502 without leaking details", async () => {

@@ -30,7 +30,7 @@ export function speakNatural(text: string, { muted, level }: { muted: boolean; l
         });
       });
       try {
-        await box.session!.connect({ agentId: res.agentId, token: res.token });
+        await box.session!.connect({ session: res.session, token: res.token });
         if (cancelled) return;
         box.session!.setVolume(muted ? 0 : 1);
         level?.set(box.session!.getOutputLevel);

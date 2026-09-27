@@ -285,7 +285,7 @@ export function useVoiceCall({ state, dispatch, transcriptionAvailable, voiceAva
     });
 
     try {
-      await s.connect({ agentId: session.agentId, token: session.token });
+      await s.connect({ session: session.session, token: session.token });
     } catch {
       s.end();
       return false;

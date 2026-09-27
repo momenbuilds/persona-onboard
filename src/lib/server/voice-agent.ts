@@ -1,5 +1,4 @@
 import "server-only";
-import { createHash } from "node:crypto";
 
 /**
  * AssemblyAI Voice Agent API — the live onboarding call.
@@ -64,10 +63,17 @@ export const FINISH_TOOL = {
   },
 };
 
-function agentConfig(voice: string) {
+export type VoiceSessionConfig = ReturnType<typeof onboardingSession>;
+
+/**
+ * Inline session config, sent by the browser as its first `session.update`.
+ * Inline rather than a stored agent: stored agents live in one AssemblyAI region,
+ * while the browser's WebSocket may land in another and get `agent_not_found`.
+ */
+export function onboardingSession(voice = process.env.PERSONA_VOICE?.trim() || DEFAULT_VOICE) {
   return {
     system_prompt: ONBOARDING_PROMPT,
-    voice: { voice_id: voice },
+    output: { type: "audio" as const, voice },
     input: {
       // Most accurate transcript and the most patient end-of-turn: people think out loud
       // when describing their day. Turn detection stays on AssemblyAI's adaptive default
@@ -77,84 +83,8 @@ function agentConfig(voice: string) {
         "A new user on an onboarding call describing their name, daily routine, work, goals and what they want an AI assistant to help with. Expect app names like Gmail, Instagram, TikTok, Notion, Slack and Google Calendar.",
       keyterms: ["Persona", "Gmail", "Instagram", "TikTok", "Notion", "Slack", "Google Calendar"],
     },
-    tools: [FINISH_TOOL],
+    tools: [{ type: "function" as const, ...FINISH_TOOL }],
   };
-}
-
-function authHeaders(json = false): Record<string, string> {
-  const key = process.env.ASSEMBLYAI_API_KEY?.trim();
-  if (!key) throw new VoiceAgentError("ASSEMBLYAI_API_KEY is not set", 503);
-  return json ? { Authorization: key, "content-type": "application/json" } : { Authorization: key };
-}
-
-// Survives dev hot reloads; re-verified every few minutes so a deleted agent is recreated.
-type CachedAgent = { id: string; checkedAt: number };
-const cache = globalThis as unknown as { __personaAgents?: Map<string, CachedAgent> };
-cache.__personaAgents ??= new Map();
-const RECHECK_MS = 5 * 60_000;
-
-type AgentSummary = { id: string; name: string };
-type AgentList = { agents?: AgentSummary[]; has_more?: boolean; response_metadata?: { next_cursor?: string } };
-
-async function agentExists(id: string): Promise<boolean> {
-  const res = await fetch(`${API}/agents/${encodeURIComponent(id)}`, {
-    headers: authHeaders(),
-    cache: "no-store",
-    signal: AbortSignal.timeout(10_000),
-  });
-  if (res.status === 404) return false;
-  if (!res.ok) throw new VoiceAgentError(`get agent failed (${res.status})`, res.status === 401 ? 401 : 502);
-  return true;
-}
-
-async function findAgentByName(name: string): Promise<string | undefined> {
-  let cursor = "";
-  for (let page = 0; page < 10; page++) {
-    const url = new URL(`${API}/agents`);
-    url.searchParams.set("limit", "100");
-    if (cursor) url.searchParams.set("after", cursor);
-    const res = await fetch(url, { headers: authHeaders(), cache: "no-store", signal: AbortSignal.timeout(10_000) });
-    if (!res.ok) throw new VoiceAgentError(`list agents failed (${res.status})`, res.status === 401 ? 401 : 502);
-    const body = (await res.json()) as AgentList | AgentSummary[];
-    const agents = Array.isArray(body) ? body : (body.agents ?? []);
-    const match = agents.find((a) => a.name === name);
-    if (match) return match.id;
-    cursor = Array.isArray(body) ? "" : (body.response_metadata?.next_cursor ?? "");
-    if (Array.isArray(body) || !body.has_more || !cursor) return undefined;
-  }
-  return undefined;
-}
-
-/** Find (or create) the stored onboarding agent for the current config. */
-export async function ensureOnboardingAgent(voice = process.env.PERSONA_VOICE?.trim() || DEFAULT_VOICE): Promise<string> {
-  const config = agentConfig(voice);
-  const name = `persona-onboarding-${createHash("sha1").update(JSON.stringify(config)).digest("hex").slice(0, 10)}`;
-  const agents = cache.__personaAgents!;
-  const cached = agents.get(name);
-  if (cached && Date.now() - cached.checkedAt < RECHECK_MS) return cached.id;
-  if (cached && (await agentExists(cached.id))) {
-    agents.set(name, { id: cached.id, checkedAt: Date.now() });
-    return cached.id;
-  }
-  agents.delete(name);
-
-  const existing = await findAgentByName(name);
-  if (existing && (await agentExists(existing))) {
-    agents.set(name, { id: existing, checkedAt: Date.now() });
-    return existing;
-  }
-
-  const created = await fetch(`${API}/agents`, {
-    method: "POST",
-    headers: authHeaders(true),
-    body: JSON.stringify({ name, ...config }),
-    signal: AbortSignal.timeout(10_000),
-  });
-  if (!created.ok) throw new VoiceAgentError(`create agent failed (${created.status}): ${(await created.text()).slice(0, 200)}`);
-  const { id } = (await created.json()) as { id?: string };
-  if (!id || !(await agentExists(id))) throw new VoiceAgentError("created agent could not be found");
-  agents.set(name, { id, checkedAt: Date.now() });
-  return id;
 }
 
 /** Single-use browser token: must be redeemed within 2 minutes, session capped at 15 minutes. */
