@@ -87,24 +87,61 @@ function authHeaders(json = false): Record<string, string> {
   return json ? { Authorization: key, "content-type": "application/json" } : { Authorization: key };
 }
 
-// Survives dev hot reloads; one lookup per server instance in production.
-const cache = globalThis as unknown as { __personaAgents?: Map<string, string> };
+// Survives dev hot reloads; re-verified every few minutes so a deleted agent is recreated.
+type CachedAgent = { id: string; checkedAt: number };
+const cache = globalThis as unknown as { __personaAgents?: Map<string, CachedAgent> };
 cache.__personaAgents ??= new Map();
+const RECHECK_MS = 5 * 60_000;
+
+type AgentSummary = { id: string; name: string };
+type AgentList = { agents?: AgentSummary[]; has_more?: boolean; response_metadata?: { next_cursor?: string } };
+
+async function agentExists(id: string): Promise<boolean> {
+  const res = await fetch(`${API}/agents/${encodeURIComponent(id)}`, {
+    headers: authHeaders(),
+    cache: "no-store",
+    signal: AbortSignal.timeout(10_000),
+  });
+  if (res.status === 404) return false;
+  if (!res.ok) throw new VoiceAgentError(`get agent failed (${res.status})`, res.status === 401 ? 401 : 502);
+  return true;
+}
+
+async function findAgentByName(name: string): Promise<string | undefined> {
+  let cursor = "";
+  for (let page = 0; page < 10; page++) {
+    const url = new URL(`${API}/agents`);
+    url.searchParams.set("limit", "100");
+    if (cursor) url.searchParams.set("after", cursor);
+    const res = await fetch(url, { headers: authHeaders(), cache: "no-store", signal: AbortSignal.timeout(10_000) });
+    if (!res.ok) throw new VoiceAgentError(`list agents failed (${res.status})`, res.status === 401 ? 401 : 502);
+    const body = (await res.json()) as AgentList | AgentSummary[];
+    const agents = Array.isArray(body) ? body : (body.agents ?? []);
+    const match = agents.find((a) => a.name === name);
+    if (match) return match.id;
+    cursor = Array.isArray(body) ? "" : (body.response_metadata?.next_cursor ?? "");
+    if (Array.isArray(body) || !body.has_more || !cursor) return undefined;
+  }
+  return undefined;
+}
 
 /** Find (or create) the stored onboarding agent for the current config. */
 export async function ensureOnboardingAgent(voice = process.env.PERSONA_VOICE?.trim() || DEFAULT_VOICE): Promise<string> {
   const config = agentConfig(voice);
   const name = `persona-onboarding-${createHash("sha1").update(JSON.stringify(config)).digest("hex").slice(0, 10)}`;
-  const cached = cache.__personaAgents!.get(name);
-  if (cached) return cached;
+  const agents = cache.__personaAgents!;
+  const cached = agents.get(name);
+  if (cached && Date.now() - cached.checkedAt < RECHECK_MS) return cached.id;
+  if (cached && (await agentExists(cached.id))) {
+    agents.set(name, { id: cached.id, checkedAt: Date.now() });
+    return cached.id;
+  }
+  agents.delete(name);
 
-  const list = await fetch(`${API}/agents`, { headers: authHeaders(), cache: "no-store", signal: AbortSignal.timeout(10_000) });
-  if (!list.ok) throw new VoiceAgentError(`list agents failed (${list.status})`, list.status === 401 ? 401 : 502);
-  const agents = (await list.json()) as { id: string; name: string }[];
-  const existing = Array.isArray(agents) ? agents.find((a) => a.name === name) : undefined;
-  if (existing) {
-    cache.__personaAgents!.set(name, existing.id);
-    return existing.id;
+  const existing = await findAgentByName(name);
+  if (existing && (await agentExists(existing))) {
+    agents.set(name, { id: existing, checkedAt: Date.now() });
+    return existing;
   }
 
   const created = await fetch(`${API}/agents`, {
@@ -114,8 +151,9 @@ export async function ensureOnboardingAgent(voice = process.env.PERSONA_VOICE?.t
     signal: AbortSignal.timeout(10_000),
   });
   if (!created.ok) throw new VoiceAgentError(`create agent failed (${created.status}): ${(await created.text()).slice(0, 200)}`);
-  const { id } = (await created.json()) as { id: string };
-  cache.__personaAgents!.set(name, id);
+  const { id } = (await created.json()) as { id?: string };
+  if (!id || !(await agentExists(id))) throw new VoiceAgentError("created agent could not be found");
+  agents.set(name, { id, checkedAt: Date.now() });
   return id;
 }
 

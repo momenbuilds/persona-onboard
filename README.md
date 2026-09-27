@@ -2,7 +2,7 @@
 
 A voice-first onboarding for [Persona](https://yourpersona.com). You meet your assistant in a two-minute call, it figures out who you are and what you need, you name it, and you land in a chat that already knows your week.
 
-**Live demo:** LIVE_URL · Next.js 16 · AssemblyAI · DeepSeek V4.1 Flash
+**Live demo:** https://persona-onboard.vercel.app · Next.js 16 · AssemblyAI · DeepSeek V4.1 Flash
 
 ---
 

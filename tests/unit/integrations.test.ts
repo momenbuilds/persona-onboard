@@ -124,7 +124,7 @@ describe("AssemblyAI voice agent (server)", () => {
   afterEach(() => {
     vi.unstubAllEnvs();
     vi.unstubAllGlobals();
-    (globalThis as unknown as { __personaAgents?: Map<string, string> }).__personaAgents?.clear();
+    (globalThis as unknown as { __personaAgents?: Map<string, unknown> }).__personaAgents?.clear();
   });
 
   it("returns a clean NO_KEY 503 without a key", async () => {
@@ -139,8 +139,14 @@ describe("AssemblyAI voice agent (server)", () => {
     const created: { name?: string; voice?: unknown; tools?: { name: string }[] }[] = [];
     const fetchMock = vi.fn(async (url: string | URL, init?: RequestInit) => {
       const u = String(url);
-      if (u.endsWith("/v1/agents") && (!init?.method || init.method === "GET")) {
-        return new Response(JSON.stringify(created.map((c, i) => ({ id: `agent_${i}`, name: c.name }))));
+      if (u.includes("/v1/agents?") && (!init?.method || init.method === "GET")) {
+        const agents = created.map((c, i) => ({ id: `agent_${i}`, name: c.name }));
+        return new Response(JSON.stringify({ agents, has_more: false, response_metadata: { next_cursor: "" } }));
+      }
+      const byId = u.match(/\/v1\/agents\/(agent_\d+)$/);
+      if (byId) {
+        const known = Number(byId[1].slice(6)) < created.length;
+        return new Response(JSON.stringify(known ? { id: byId[1] } : { code: "agent_not_found" }), { status: known ? 200 : 404 });
       }
       if (u.endsWith("/v1/agents") && init?.method === "POST") {
         created.push(JSON.parse(String(init.body)));
@@ -165,9 +171,34 @@ describe("AssemblyAI voice agent (server)", () => {
     expect(created[0].tools?.[0].name).toBe("finish_onboarding");
 
     // Cache cleared → found by name via list, not created again.
-    (globalThis as unknown as { __personaAgents?: Map<string, string> }).__personaAgents?.clear();
+    (globalThis as unknown as { __personaAgents?: Map<string, unknown> }).__personaAgents?.clear();
     expect(await ensureOnboardingAgent()).toBe("agent_0");
     expect(created).toHaveLength(1);
+  });
+
+  it("recreates the agent when the cached id no longer exists", async () => {
+    vi.stubEnv("ASSEMBLYAI_API_KEY", "aai-key");
+    let posts = 0;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string | URL, init?: RequestInit) => {
+        const u = String(url);
+        if (u.includes("/v1/agents?")) return new Response(JSON.stringify({ agents: [], has_more: false }));
+        if (u.endsWith("/v1/agents/agent_gone")) return new Response("{}", { status: 404 });
+        if (u.endsWith("/v1/agents/agent_new")) return new Response(JSON.stringify({ id: "agent_new" }));
+        if (u.endsWith("/v1/agents") && init?.method === "POST") {
+          posts++;
+          return new Response(JSON.stringify({ id: "agent_new" }), { status: 201 });
+        }
+        throw new Error(`unexpected ${u}`);
+      }),
+    );
+    const agents = (globalThis as unknown as { __personaAgents: Map<string, { id: string; checkedAt: number }> }).__personaAgents;
+    await ensureOnboardingAgent().catch(() => undefined);
+    const [name] = [...agents.keys()];
+    agents.set(name, { id: "agent_gone", checkedAt: 0 });
+    expect(await ensureOnboardingAgent()).toBe("agent_new");
+    expect(posts).toBe(2);
   });
 
   it("maps upstream failures to 502 without leaking details", async () => {

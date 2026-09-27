@@ -198,7 +198,7 @@ const BLOCKED_NAMES = new Set(
     "hal", "samantha", "elon", "musk", "oprah", "beyonce", "beyoncé", "rihanna", "drake", "kanye", "ye",
     "taylor", "swift", "adele", "madonna", "shakira", "zendaya", "obama", "trump", "biden", "einstein",
     "tesla", "jobs", "gates", "bezos", "zuckerberg", "kardashian", "kim", "kylie", "messi", "ronaldo",
-    "lebron", "serena", "persona",
+    "lebron", "serena", "persona", "mistral", "grok", "llama", "perplexity", "cohere", "bard", "deepseek", "qwen", "kimi", "manus",
   ].map((n) => n.toLowerCase()),
 );
 
