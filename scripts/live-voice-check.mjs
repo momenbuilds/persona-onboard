@@ -53,6 +53,10 @@ await page.screenshot({ path: `${out}/call-final.png`, fullPage: true });
 
 if (await page.getByRole("button", { name: /See what I got/ }).isVisible().catch(() => false)) {
   await page.getByRole("button", { name: /See what I got/ }).click();
+  // The goal chart comes first, then the summary.
+  await page.getByText("your next 6 months").waitFor({ timeout: 40_000 });
+  log("PLAN:", (await page.getByRole("figure").innerText()).replace(/\n+/g, " | ").slice(0, 200));
+  await page.getByRole("button", { name: /^Continue/ }).click();
   await page.getByText("now, name your Persona").waitFor({ timeout: 40_000 });
   await page.waitForTimeout(2500);
   log("SUMMARY:", await page.getByRole("heading", { level: 1 }).innerText());
