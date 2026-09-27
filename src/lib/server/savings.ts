@@ -37,8 +37,10 @@ Only tasks they actually mentioned or clearly implied.`,
     });
     if (!res.ok) throw new Error(String(res.status));
     const content = ((await res.json()) as { choices?: { message?: { content?: string } }[] }).choices?.[0]?.message?.content ?? "";
+    // Loose on the numbers: an over-estimate (e.g. 30h of coding) is clamped, not a reason to drop the answer.
+    const Item = TimeSavingSchema.extend({ manualHours: z.number().nonnegative(), withPersonaHours: z.number().nonnegative() });
     const parsed = z
-      .object({ items: z.array(TimeSavingSchema).min(1).max(8) })
+      .object({ items: z.array(Item).min(1).max(8) })
       .parse(JSON.parse(content.slice(content.indexOf("{"), content.lastIndexOf("}") + 1)));
     const items = clampSavings(parsed.items);
     return items.length >= 2 ? items : fallbackSavings(context);
