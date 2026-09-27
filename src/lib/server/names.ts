@@ -34,7 +34,9 @@ function pickFallback(exclude: string[]) {
 export type NameContext = { userName: string; summary: string; goals: string[] };
 
 /** Three fresh, personal, product-safe agent names. Never throws. */
-export async function freshAgentNames(ctx: NameContext, exclude: string[] = []): Promise<string[]> {
+export async function freshAgentNames(ctx: NameContext, excludeNames: string[] = []): Promise<string[]> {
+  // Never suggest the user's own name for their assistant.
+  const exclude = [...excludeNames, ctx.userName.trim()].filter(Boolean);
   const key = process.env.OPENROUTER_API_KEY?.trim();
   if (!key) return pickFallback(exclude);
   const style = STYLES[Math.floor(Math.random() * STYLES.length)];

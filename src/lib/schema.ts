@@ -23,6 +23,14 @@ export const AgentNameSchema = z
   .max(16)
   .regex(/^[A-Za-z][A-Za-z' -]*[A-Za-z]$/, "Letters only");
 
+/** One task's weekly hours, by hand vs. with Persona. */
+export const TimeSavingSchema = z.object({
+  task: z.string().trim().min(2).max(40),
+  manualHours: z.number().min(0.25).max(15),
+  withPersonaHours: z.number().min(0).max(15),
+});
+export type TimeSaving = z.infer<typeof TimeSavingSchema>;
+
 /**
  * The structured understanding produced from the onboarding call —
  * by DeepSeek V4.1 Flash (via OpenRouter) or by the deterministic fallback.
@@ -36,8 +44,11 @@ export const UnderstandingSchema = z.object({
   secondaryGoals: z.array(z.string().trim().min(2).max(120)).max(4),
   suggestedAgentNames: z.array(AgentNameSchema).length(3),
   suggestedReminders: z.array(ReminderSchema).length(3),
+  /** Weekly hours per task, by hand vs. with Persona (an estimate from the call). */
+  timeSavings: z.array(TimeSavingSchema).max(5).optional(),
 });
 export type Understanding = z.infer<typeof UnderstandingSchema>;
+
 
 export const UnderstandRequestSchema = z.object({
   messages: z.array(ChatMessageSchema).min(1).max(120),

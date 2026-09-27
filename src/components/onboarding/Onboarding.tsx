@@ -19,6 +19,7 @@ const Dashboard = dynamic(() => import("./steps/Dashboard").then((m) => m.Dashbo
 });
 import { GmailStep } from "./steps/GmailStep";
 import { ReadyStep } from "./steps/ReadyStep";
+import { SavingsStep } from "./steps/SavingsStep";
 import { UnderstandingStep } from "./steps/UnderstandingStep";
 import { WelcomeStep } from "./steps/WelcomeStep";
 import { STEPS, useOnboarding, type Step } from "./state";
@@ -34,6 +35,11 @@ export function Onboarding() {
   useEffect(() => {
     void fetchHealth().then(setHealth);
   }, []);
+
+  // Each new screen starts at its heading, not wherever the last one was scrolled to.
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+  }, [state.step]);
 
   const demoMode = health && (!health.voice || !health.understanding);
   const demoTitle = health
@@ -108,6 +114,7 @@ export function Onboarding() {
                 />
               )}
               {state.step === "understanding" && <UnderstandingStep state={state} dispatch={dispatch} />}
+              {state.step === "savings" && <SavingsStep state={state} dispatch={dispatch} />}
               {state.step === "gmail" && <GmailStep state={state} dispatch={dispatch} />}
               {state.step === "ready" && <ReadyStep state={state} dispatch={dispatch} />}
               {state.step === "dashboard" && <Dashboard state={state} dispatch={dispatch} />}

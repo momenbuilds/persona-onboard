@@ -17,6 +17,7 @@ A voice-first onboarding for [Persona](https://yourpersona.com). You meet your a
 | Welcome | *"hey, i'm Persona. want to do a quick call so i can get to know you?"* Call or type. |
 | Call | Real-time voice with natural speech and turn-taking, or typing. Persona reflects back what you said and asks only for what's missing: your name, what you need help with, your goals and your routine. It handles messy answers, name corrections, hang-ups and refreshes. |
 | Here's what I got | A one-line summary, your goals (pick the one that matters most), fresh name ideas generated from your answers every time, or a name of your own. |
+| Time back | A chart of the hours a week your assistant gives back, per task, estimated from what you said on the call (clamped to believable numbers, and labeled as an estimate). |
 | Gmail | **A mock connection.** No OAuth, no Google access. It builds a small demo inbox from your answers so the dashboard has something real-looking to work with. |
 | Ready | Your agent greets you by voice and offers a few reminders to opt into. |
 
@@ -44,7 +45,7 @@ browser mic ─ AudioWorklet (24 kHz PCM16) ─► Web Worker ─ WebSocket ─�
                                                         ▲               (streaming STT, turn detection,
                   /api/voice-agent ─ single-use token ──┘                barge-in, natural voice)
 
-/api/understand ─► OpenRouter · DeepSeek V4.1 Flash ─► summary, goals, names, reminders   (Zod-validated)
+/api/understand ─► OpenRouter · DeepSeek V4.1 Flash ─► summary, goals, names, reminders, time saved   (Zod-validated)
 /api/chat       ─► DeepSeek, streamed as NDJSON     ─► text + chart / document / reminder blocks
 /api/inbox, /api/names ─► DeepSeek                  ─► demo inbox, fresh agent names
 /api/transcribe ─► AssemblyAI Universal-3.5 Pro     ─► fallback voice path (record → transcribe)
@@ -89,7 +90,7 @@ node scripts/live-voice-check.mjs http://localhost:3000 answer.wav out/  # a spo
 ```
 src/app                    landing, /start, API routes
 src/components/landing     hero, Band, privacy, footer
-src/components/onboarding  the five steps, dashboard, call controller
+src/components/onboarding  the onboarding steps, dashboard, call controller
 src/components/chat        streaming, markdown + KaTeX, charts, documents, preview panel
 src/lib/conversation       on-device dialogue engine and fallbacks
 src/lib/server             AssemblyAI, OpenRouter, voice agent, rate limiting

@@ -40,6 +40,12 @@ log("names:", await page.getByRole("radiogroup", { name: "Agent name" }).getByRo
 await shot("2-summary");
 await page.getByRole("radiogroup", { name: "Agent name" }).getByRole("radio").first().click();
 await page.getByRole("button", { name: /^Continue/ }).click();
+// Time back: the hours-saved chart from the call.
+await page.getByText("time back").waitFor({ timeout: 20000 });
+await page.waitForTimeout(2200);
+log("savings:", (await page.getByRole("heading", { level: 1 }).innerText()).replace(/\s+/g, " "), "|", (await page.getByRole("figure").innerText()).replace(/\n+/g, " | ").slice(0, 400));
+await page.screenshot({ path: `${out}/savings.png` });
+await page.getByRole("button", { name: /^Continue/ }).click();
 await page.getByRole("button", { name: /Connect Gmail/ }).click();
 await page.getByRole("heading", { name: "Gmail connected." }).waitFor({ timeout: 40000 });
 await page.waitForTimeout(1200);

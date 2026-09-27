@@ -283,7 +283,7 @@ function Summary({ state, dispatch }: Props) {
           </Button>
           <SourceBadge source={state.source} />
         </div>
-        <Button size="lg" disabled={!canContinue} onClick={() => dispatch({ type: "go", step: "gmail" })}>
+        <Button size="lg" disabled={!canContinue} onClick={() => dispatch({ type: "go", step: "savings" })}>
           Continue <ArrowRightIcon className="h-5 w-5" />
         </Button>
       </div>
