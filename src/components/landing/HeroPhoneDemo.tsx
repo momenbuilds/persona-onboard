@@ -2,12 +2,12 @@
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { PersonaMark } from "@/components/brand/PersonaLogo";
 import { PersonaOrb, type OrbState } from "@/components/orb/PersonaOrb";
 import { Waveform } from "@/components/orb/Waveform";
 import { PhoneFrame } from "@/components/PhoneFrame";
-import { Bubble } from "@/components/ui/Bubble";
+import { Bubble, TypingBubble } from "@/components/ui/Bubble";
 import { createLevelSource, syntheticSpeech } from "@/lib/voice/level";
 
 type Line = { from: "persona" | "user"; text: string };
@@ -15,11 +15,8 @@ type Line = { from: "persona" | "user"; text: string };
 const LINES: Line[] = [
   // A shorter take on the call's real intro, sized for the phone mockup.
   { from: "persona", text: "hey, i'm Persona, your personal assistant. what should i call you?" },
-  {
-    from: "user",
-    text: "i'm Maya. up at 6, then shoots and emails for my fashion brand. i need help staying consistent with content.",
-  },
-  { from: "persona", text: "nice to meet you, Maya. building your fashion brand, love that. i've got what i need." },
+  { from: "user", text: "i'm Maya! i run a fashion brand and i keep falling behind on content." },
+  { from: "persona", text: "nice to meet you, Maya. let's put your content on autopilot." },
 ];
 
 /** Scripted beats of the loop: [ms, orb state, lines shown, show summary card] */
@@ -42,6 +39,13 @@ export function HeroPhoneDemo() {
   const [beat, setBeat] = useState(reduce ? BEATS.length - 1 : 0);
   const level = useMemo(() => createLevelSource(), []);
   const [, orbState, shown, summary] = BEATS[beat];
+  // The chat reads top-down under the orb, like a real call; if it outgrows the
+  // screen it scrolls to the newest line instead of clipping it.
+  const chat = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = chat.current;
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: reduce ? "auto" : "smooth" });
+  }, [beat, reduce]);
 
   useEffect(() => {
     if (reduce) return;
@@ -94,12 +98,21 @@ export function HeroPhoneDemo() {
             </span>
           </div>
 
-          <div className="mt-3 flex flex-1 flex-col justify-end gap-1.5 overflow-hidden">
+          <div ref={chat} className="mt-4 flex min-h-0 flex-1 flex-col gap-1.5 overflow-hidden">
             {LINES.slice(0, shown).map((l, i) => (
-              <Bubble key={i} from={l.from} size="sm" tail>
-                {l.text}
-              </Bubble>
+              <motion.div
+                key={i}
+                initial={reduce ? false : { opacity: 0, y: 10, scale: 0.96 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ type: "spring", stiffness: 320, damping: 26 }}
+                style={{ transformOrigin: l.from === "user" ? "bottom right" : "bottom left" }}
+              >
+                <Bubble from={l.from} size="sm" tail>
+                  {l.text}
+                </Bubble>
+              </motion.div>
             ))}
+            <AnimatePresence>{orbState === "thinking" ? <TypingBubble key="typing" size="sm" /> : null}</AnimatePresence>
             <AnimatePresence>
               {summary ? (
                 <motion.div
