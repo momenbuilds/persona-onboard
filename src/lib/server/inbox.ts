@@ -69,15 +69,16 @@ export async function generateInbox(ctx: InboxContext): Promise<{ inbox: InboxEm
         model: UNDERSTANDING_MODEL,
         provider: OPENROUTER_PROVIDER,
         temperature: 0.8,
-        max_tokens: 2200,
+        max_tokens: 1400,
         response_format: { type: "json_object" },
         reasoning: { enabled: false },
         messages: [
           {
             role: "system",
-            content: `Create a realistic DEMO inbox for a product demo. Return ONLY {"emails":[...]} with exactly 6 emails, newest first, each:
-{"id":"e1","from":"First Last" or a team name,"subject":string,"date":"Mon 9:12am" style within the last 5 days,"snippet":one line,"body":2-5 short sentences,"attachment":null or {"name":"file.ext","kind":"deck"|"doc"|"sheet"|"pdf","content":plain-text contents}}
-Rules: grounded in this person's actual life, work and goals. Exactly one email must carry a presentation (kind "deck") about their main goal, with content as a slide-by-slide outline of 5-7 slides with concrete, specific numbers, dates and owners. One or two other emails may have a doc or sheet. Mix colleagues, clients, a vendor or bill, and something personal. Use invented people only, never real public figures. No placeholders like [Name].`,
+            content: `Create a realistic DEMO inbox for a product demo. Return ONLY {"emails":[...]} with exactly 5 emails, newest first, each:
+{"id":"e1","from":"First Last" or a team name,"subject":string,"date":"Mon 9:12am" style within the last 5 days,"snippet":one line,"body":1-3 short sentences,"attachment":null or {"name":"file.ext","kind":"deck"|"doc"|"sheet"|"pdf","content":plain-text contents}}
+Today is ${new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}. Any dates or deadlines you mention must be on or after today, in this year or next.
+Rules: grounded in this person's actual life, work and goals. Exactly one email must carry a presentation (kind "deck") about their main goal, with content as a slide-by-slide outline of 5 short slides with concrete, specific numbers, dates and owners. At most one other email may have a short doc or sheet. Mix colleagues, clients, a vendor or bill, and something personal. Use invented people only, never real public figures. No placeholders like [Name].`,
           },
           {
             role: "user",

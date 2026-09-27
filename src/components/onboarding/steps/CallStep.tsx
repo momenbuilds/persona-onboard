@@ -348,9 +348,14 @@ function EndedCard({
 
 function Transcript({ messages, thinking }: { messages: OnboardingState["messages"]; thinking: boolean }) {
   const end = useRef<HTMLDivElement>(null);
+  const lastLength = messages.at(-1)?.text.length ?? 0;
   useEffect(() => {
     end.current?.scrollIntoView({ block: "end", behavior: "smooth" });
   }, [messages.length, thinking]);
+  // Streaming replies grow in place; keep the newest line above the composer.
+  useEffect(() => {
+    end.current?.scrollIntoView({ block: "end" });
+  }, [lastLength]);
 
   return (
     <div role="log" aria-live="polite" aria-label="Call transcript" className="mt-6 flex flex-col gap-2 pb-4">

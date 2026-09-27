@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { ArrowRightIcon, CheckIcon, PencilIcon, RetryIcon } from "@/components/ui/icons";
 import { understand } from "@/lib/api";
 import { isBlockedAgentName } from "@/lib/conversation/needs";
+import { prefetchInbox } from "@/lib/demo/inbox-prefetch";
 import { AgentNameSchema } from "@/lib/schema";
 import type { Action, OnboardingState } from "../state";
 import { StepHeading } from "./StepHeading";
@@ -50,6 +51,17 @@ function Summary({ state, dispatch }: Props) {
 
   // Stable chip order, so picking a goal doesn't shuffle the row under your finger.
   const [goals] = useState(() => [u.primaryGoal, ...u.secondaryGoals]);
+
+  // Start the demo inbox now so the Gmail step doesn't wait on it (debounced for goal flips).
+  const { userName, notes } = state;
+  useEffect(() => {
+    const t = setTimeout(() => {
+      void prefetchInbox({ userName, summary: u.summary, primaryGoal: u.primaryGoal, secondaryGoals: u.secondaryGoals, notes });
+    }, 400);
+    return () => clearTimeout(t);
+    // userName is edited live on this screen; the inbox doesn't need to follow every keystroke.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [u.summary, u.primaryGoal]);
 
   // "new ideas": fresh names from the user's own data, never repeating ones already shown.
   const shown = useRef(new Set(u.suggestedAgentNames));

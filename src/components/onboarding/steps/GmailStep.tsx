@@ -6,6 +6,7 @@ import { useState, type Dispatch } from "react";
 import { Button } from "@/components/ui/Button";
 import { ArrowRightIcon, CheckIcon, MailIcon, ShieldIcon, BellIcon } from "@/components/ui/icons";
 import { connectGmailMock } from "@/lib/demo/gmail-mock";
+import { prefetchInbox } from "@/lib/demo/inbox-prefetch";
 import type { InboxEmail } from "@/lib/schema";
 import type { Action, OnboardingState } from "../state";
 import { StepHeading } from "./StepHeading";
@@ -30,29 +31,25 @@ export function GmailStep({ state, dispatch }: Props) {
     setPhase("connecting");
     // DEMO: no Google access. While the mock "connects", build a sample inbox from
     // the user's own onboarding answers so the dashboard has something to work with.
+    // It was usually started on the summary screen, so this is normally instant.
     const u = state.understanding;
     const inbox = u
-      ? fetch("/api/inbox", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({
-            userName: state.userName,
-            summary: u.summary,
-            primaryGoal: u.primaryGoal,
-            secondaryGoals: u.secondaryGoals,
-            notes: state.notes,
-          }),
+      ? prefetchInbox({
+          userName: state.userName,
+          summary: u.summary,
+          primaryGoal: u.primaryGoal,
+          secondaryGoals: u.secondaryGoals,
+          notes: state.notes,
         })
-          .then((r) => (r.ok ? r.json() : null))
-          .then((d: { inbox?: InboxEmail[] } | null) => d?.inbox ?? [])
-          .catch(() => [] as InboxEmail[])
       : Promise.resolve([] as InboxEmail[]);
+    // Whenever it lands (even after this step), it fills the dashboard's inbox.
+    void inbox.then((emails) => emails.length && dispatch({ type: "setInbox", inbox: emails }));
     await connectGmailMock((stage, text) => {
       if (stage !== "connected") setLabel(text);
     });
     setLabel("reading what's in motion…");
-    const emails = await inbox;
-    dispatch({ type: "setInbox", inbox: emails });
+    // Never hold the step for long: show what's ready after a few seconds at most.
+    await Promise.race([inbox, new Promise((r) => setTimeout(r, 2500))]);
     setPhase("connected");
     dispatch({ type: "setGmail", status: "connected" });
   }

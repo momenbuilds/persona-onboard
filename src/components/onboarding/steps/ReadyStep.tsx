@@ -1,12 +1,10 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useEffect, useMemo, useState, type Dispatch } from "react";
-import { PersonaOrb, type OrbState } from "@/components/orb/PersonaOrb";
+import type { Dispatch } from "react";
+import { PersonaOrb } from "@/components/orb/PersonaOrb";
 import { Button } from "@/components/ui/Button";
 import { ArrowRightIcon, CheckIcon, PlusIcon } from "@/components/ui/icons";
-import { createLevelSource } from "@/lib/voice/level";
-import { speakNatural } from "@/lib/voice/say";
 import type { Action, OnboardingState } from "../state";
 import { StepHeading } from "./StepHeading";
 
@@ -15,35 +13,12 @@ type Props = { state: OnboardingState; dispatch: Dispatch<Action> };
 export function ReadyStep({ state, dispatch }: Props) {
   const agent = state.agentName || "Persona";
   const name = state.userName.trim();
-  const level = useMemo(() => createLevelSource(), []);
-  const [orb, setOrb] = useState<OrbState>("idle");
-
-  // A short spoken hello from the new agent (text is on screen too; respects mute).
-  const { muted } = state;
-  useEffect(() => {
-    let cancelled = false;
-    let speech: ReturnType<typeof speakNatural> | null = null;
-    const t = setTimeout(() => {
-      if (cancelled) return;
-      setOrb("speaking");
-      speech = speakNatural(`hi ${name || "there"}, i'm ${agent}. i'm ready when you are.`, { muted, level });
-      void speech.done.then(() => {
-        if (!cancelled) setOrb("idle");
-      });
-    }, 500);
-    return () => {
-      cancelled = true;
-      clearTimeout(t);
-      speech?.cancel();
-    };
-    // Say hello once on arrival.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // Silent on purpose: after the call, Persona only speaks when you start a call.
 
   return (
     <section className="mx-auto flex w-full max-w-xl flex-1 flex-col items-center px-6 pb-20 pt-10 text-center sm:pt-16">
       <motion.div initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 160, damping: 16 }}>
-        <PersonaOrb size={156} state={orb} level={level} />
+        <PersonaOrb size={156} state="idle" />
       </motion.div>
 
       <StepHeading className="mt-10 text-[36px] font-medium leading-[1.05] tracking-[-0.035em] sm:text-[48px]">

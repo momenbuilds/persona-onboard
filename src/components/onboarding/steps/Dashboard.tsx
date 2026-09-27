@@ -153,7 +153,10 @@ export function Dashboard({ state, dispatch }: Props) {
   return (
     <LayoutGroup>
       <section
-        className={`mx-auto grid w-full max-w-[1440px] flex-1 gap-4 px-3 pb-3 pt-4 sm:px-6 lg:h-[calc(100dvh-84px)] ${
+        // Desktop: exactly one screen tall (under the 64px header). flex-none + a minmax(0,1fr) row
+        // keep a long sidebar or chat scrolling inside their cards instead of stretching the page
+        // and pushing the composer below the fold.
+        className={`mx-auto grid w-full max-w-[1440px] flex-1 gap-4 px-3 pb-3 pt-4 sm:px-6 lg:h-[calc(100dvh-64px)] lg:flex-none lg:grid-rows-[minmax(0,1fr)] ${
           open ? "lg:grid-cols-[minmax(0,1fr)_minmax(440px,46%)]" : "lg:grid-cols-[300px_minmax(0,1fr)]"
         }`}
       >

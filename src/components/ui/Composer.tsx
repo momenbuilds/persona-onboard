@@ -12,7 +12,10 @@ type Props = {
   label?: string;
 };
 
-/** iMessage-style composer: growing textarea + blue send button. Enter sends, Shift+Enter adds a line. */
+/**
+ * iMessage-style composer: growing textarea + blue send button. Enter sends, Shift+Enter adds a line.
+ * `disabled` only blocks sending: the field stays editable so it keeps focus and you can type ahead.
+ */
 export function Composer({ onSend, placeholder = "iMessage", disabled, autoFocus, label = "Your message" }: Props) {
   const [value, setValue] = useState("");
   const ref = useRef<HTMLTextAreaElement>(null);
@@ -44,7 +47,7 @@ export function Composer({ onSend, placeholder = "iMessage", disabled, autoFocus
         rows={1}
         value={value}
         autoFocus={autoFocus}
-        disabled={disabled}
+        aria-disabled={disabled || undefined}
         placeholder={placeholder}
         maxLength={1200}
         onChange={(e) => {
@@ -58,7 +61,7 @@ export function Composer({ onSend, placeholder = "iMessage", disabled, autoFocus
             submit();
           }
         }}
-        className="max-h-32 min-h-[36px] flex-1 resize-none bg-transparent py-[7px] text-[16px] leading-[22px] text-ink outline-none placeholder:text-faint focus-visible:outline-none disabled:opacity-50"
+        className="max-h-32 min-h-[36px] flex-1 resize-none bg-transparent py-[7px] text-[16px] leading-[22px] text-ink outline-none placeholder:text-faint focus-visible:outline-none"
       />
       <button
         type="submit"
