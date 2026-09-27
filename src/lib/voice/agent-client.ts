@@ -30,7 +30,8 @@ export type AgentEvents = {
   onUserSpeechStarted?: () => void;
   onUserDelta?: (itemId: string, textSoFar: string) => void;
   onUserFinal?: (itemId: string, text: string) => void;
-  onToolCall?: (name: string, args: Record<string, unknown>) => void;
+  /** Return value is sent back as the tool.result (defaults to { ok: true }). */
+  onToolCall?: (name: string, args: Record<string, unknown>) => Record<string, unknown> | void;
   /** Session ended cleanly (session.ended). */
   onEnded?: () => void;
   /** Connection problem before or during the session. */
@@ -75,7 +76,7 @@ export class VoiceAgentSession {
   /** reply_id → { done, status } so "played" fires when both generation and audio finish. */
   private pending = new Map<string, { done: boolean; status: "completed" | "interrupted"; lastEnd: number }>();
   private currentReply: string | null = null;
-  private toolCalls: { call_id: string }[] = [];
+  private toolCalls: { call_id: string; result: Record<string, unknown> }[] = [];
   private pageHide = () => this.end();
 
   constructor(private events: AgentEvents) {}
@@ -347,7 +348,7 @@ export class VoiceAgentSession {
         if (this.currentReply === id) this.currentReply = null;
         // Tool results must be sent right after reply.done.
         for (const call of this.toolCalls.splice(0)) {
-          this.send({ type: "tool.result", call_id: call.call_id, result: JSON.stringify({ ok: true }) });
+          this.send({ type: "tool.result", call_id: call.call_id, result: JSON.stringify(call.result) });
         }
         this.maybePlayed(id);
         break;
@@ -362,8 +363,8 @@ export class VoiceAgentSession {
         this.events.onUserFinal?.(String(msg.item_id), String(msg.text ?? ""));
         break;
       case "tool.call":
-        this.toolCalls.push({ call_id: String(msg.call_id) });
-        this.events.onToolCall?.(String(msg.name), (msg.arguments as Record<string, unknown>) ?? {});
+        const result = this.events.onToolCall?.(String(msg.name), (msg.arguments as Record<string, unknown>) ?? {});
+        this.toolCalls.push({ call_id: String(msg.call_id), result: result ?? { ok: true } });
         break;
       case "session.ended":
         this.ended = true;

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type Dispatch } from "react";
 import { fetchVoiceSession, transcribe } from "@/lib/api";
 import { finishEarly, initialEngine, OPENER, respond, resumeTurn, type EngineState } from "@/lib/conversation/engine";
+import { reviewFinish } from "@/lib/conversation/finish-gate";
 import { SAMPLE_ANSWER } from "@/lib/conversation/samples";
 import type { ChatMessage } from "@/lib/schema";
 import { MIC_ALIVE_RMS, VoiceAgentSession } from "@/lib/voice/agent-client";
@@ -255,6 +256,13 @@ export function useVoiceCall({ state, dispatch, transcriptionAvailable, voiceAva
       },
       onToolCall: (name, args) => {
         if (!alive(g) || name !== "finish_onboarding") return;
+        // finish() sets `finishing` before asking the agent to wrap up, so a user-requested
+        // stop always goes through; otherwise the agent keeps asking until it has everything.
+        const decision = reviewFinish(args, finishing.current !== null);
+        if (!decision.accept) {
+          console.info("[voice] finish rejected, still missing:", decision.missing.join(", "));
+          return decision.result;
+        }
         const notes = Object.fromEntries(
           Object.entries(args).filter(([, v]) => typeof v === "string" && v.trim()).map(([k, v]) => [k, String(v).trim()]),
         );
