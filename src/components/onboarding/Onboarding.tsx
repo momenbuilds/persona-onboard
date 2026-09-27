@@ -9,6 +9,7 @@ import { SpeakerIcon, SpeakerOffIcon } from "@/components/ui/icons";
 import { fetchHealth } from "@/lib/api";
 import type { HealthResponse } from "@/lib/schema";
 import { CallStep } from "./steps/CallStep";
+import { CelebrateStep } from "./steps/CelebrateStep";
 import dynamic from "next/dynamic";
 
 // The dashboard carries markdown, KaTeX and chart code: load it only when it's shown,
@@ -115,6 +116,7 @@ export function Onboarding() {
               )}
               {state.step === "understanding" && <UnderstandingStep state={state} dispatch={dispatch} />}
               {state.step === "savings" && <SavingsStep state={state} dispatch={dispatch} />}
+              {state.step === "celebrate" && <CelebrateStep state={state} dispatch={dispatch} />}
               {state.step === "gmail" && <GmailStep state={state} dispatch={dispatch} />}
               {state.step === "ready" && <ReadyStep state={state} dispatch={dispatch} />}
               {state.step === "dashboard" && <Dashboard state={state} dispatch={dispatch} />}

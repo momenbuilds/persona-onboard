@@ -5,37 +5,19 @@ import { useEffect, useId, useRef, useState, type Dispatch } from "react";
 import { PersonaOrb } from "@/components/orb/PersonaOrb";
 import { Button } from "@/components/ui/Button";
 import { ArrowRightIcon, CheckIcon, PencilIcon, RetryIcon } from "@/components/ui/icons";
-import { understand } from "@/lib/api";
 import { isBlockedAgentName } from "@/lib/conversation/needs";
 import { prefetchInbox } from "@/lib/demo/inbox-prefetch";
 import { AgentNameSchema } from "@/lib/schema";
 import type { Action, OnboardingState } from "../state";
 import { StepHeading } from "./StepHeading";
+import { PuttingItTogether, useUnderstanding } from "./Understanding";
 
 type Props = { state: OnboardingState; dispatch: Dispatch<Action> };
 
 export function UnderstandingStep({ state, dispatch }: Props) {
-  const { understanding, messages, notes } = state;
-
-  // Run the understanding once per transcript. The ref guards StrictMode's double effect.
-  const requested = useRef(false);
-  useEffect(() => {
-    if (understanding || requested.current) return;
-    requested.current = true;
-    void understand(messages, notes).then((res) =>
-      dispatch({ type: "setUnderstanding", understanding: res.understanding, source: res.source }),
-    );
-  }, [understanding, messages, notes, dispatch]);
-
-  if (!understanding) {
-    return (
-      <section className="mx-auto flex flex-1 flex-col items-center justify-center gap-7 px-6 pb-24 text-center" aria-busy>
-        <PersonaOrb state="thinking" size={132} />
-        <StepHeading className="text-[22px] font-medium tracking-[-0.02em] text-ink-soft">putting it together…</StepHeading>
-      </section>
-    );
-  }
-
+  // Usually already done on the progress screen; runs here after a refresh.
+  const understanding = useUnderstanding(state, dispatch);
+  if (!understanding) return <PuttingItTogether />;
   return <Summary state={state} dispatch={dispatch} />;
 }
 
@@ -283,7 +265,7 @@ function Summary({ state, dispatch }: Props) {
           </Button>
           <SourceBadge source={state.source} />
         </div>
-        <Button size="lg" disabled={!canContinue} onClick={() => dispatch({ type: "go", step: "savings" })}>
+        <Button size="lg" disabled={!canContinue} onClick={() => dispatch({ type: "go", step: "celebrate" })}>
           Continue <ArrowRightIcon className="h-5 w-5" />
         </Button>
       </div>

@@ -15,11 +15,12 @@ A voice-first onboarding for [Persona](https://yourpersona.com). You meet your a
 | Screen | What happens |
 | --- | --- |
 | Welcome | *"hey, i'm Persona. want to do a quick call so i can get to know you?"* Call or type. |
-| Call | Real-time voice with natural speech and turn-taking, or typing. Persona reflects back what you said and asks only for what's missing: your name, what you need help with, your goals and your routine. It handles messy answers, name corrections, hang-ups and refreshes. |
+| Call | Real-time voice with natural speech and turn-taking, or typing. Persona introduces itself, then asks one thing at a time: your name, what you need help with, your goals and your routine, reacting to what you say before moving on. It handles messy answers, name corrections, hang-ups and refreshes, and won't end the call until it has all four (unless you say you're done). |
+| Your plan | A progress chart for *your* goal (income, growth, job search, routine, school, or busywork), with Persona vs. on your own over six months, plus the hours a week you get back, estimated from the call. Clearly labeled as an illustration. |
 | Here's what I got | A one-line summary, your goals (pick the one that matters most), fresh name ideas generated from your answers every time, or a name of your own. |
-| Time back | A chart of the hours a week your assistant gives back, per task, estimated from what you said on the call (clamped to believable numbers, and labeled as an estimate). |
+| All set | A celebration: the orb shakes like a bottle and pops with a cork-and-fizz sound (synthesized with Web Audio, muted if you've muted Persona) and emoji confetti, then a personal "congrats" for your goal. |
 | Gmail | **A mock connection.** No OAuth, no Google access. It builds a small demo inbox from your answers so the dashboard has something real-looking to work with. |
-| Ready | Your agent greets you by voice and offers a few reminders to opt into. |
+| Ready | Your agent says hello on screen and offers a few reminders to opt into. After the call, Persona stays silent. |
 
 **Dashboard.** Chat with your agent. Replies stream in, and it can:
 

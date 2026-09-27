@@ -138,7 +138,7 @@ export function CallStep({ state, dispatch, transcriptionAvailable, voiceAvailab
           <EndedCard
             done={state.engine.done}
             hasAnswers={userTurns > 0}
-            onSeeResults={() => dispatch({ type: "go", step: "understanding" })}
+            onSeeResults={() => dispatch({ type: "go", step: "savings" })}
             onResume={() => {
               primeCallAudio(true);
               void call.resume();
@@ -149,7 +149,7 @@ export function CallStep({ state, dispatch, transcriptionAvailable, voiceAvailab
             }}
             onContinue={() => {
               dispatch({ type: "setEngine", engine: finishEarly(state.engine).state });
-              dispatch({ type: "go", step: "understanding" });
+              dispatch({ type: "go", step: "savings" });
             }}
           />
         ) : null}

@@ -33,19 +33,25 @@ await page.getByRole("button", { name: /See what I got/ }).waitFor({ timeout: 60
 log("call:", (await page.getByRole("log", { name: "Call transcript" }).innerText()).replace(/\n+/g, " | ").slice(0, 400));
 await shot("1-call");
 await page.getByRole("button", { name: /See what I got/ }).click();
+// Your plan: the goal trend chart, right after the call.
+await page.getByText("your next 6 months").waitFor({ timeout: 40000 });
+await page.waitForTimeout(2400);
+log("plan:", (await page.getByRole("heading", { level: 1 }).innerText()).replace(/\s+/g, " "), "|", (await page.getByRole("figure").innerText()).replace(/\n+/g, " | ").slice(0, 300));
+await page.screenshot({ path: `${out}/plan.png` });
+await page.getByRole("button", { name: /^Continue/ }).click();
 await page.getByText("now, name your Persona").waitFor({ timeout: 40000 });
 await page.waitForTimeout(2500);
 log("summary:", await page.getByRole("heading", { level: 1 }).innerText());
 log("names:", await page.getByRole("radiogroup", { name: "Agent name" }).getByRole("radio").allInnerTexts());
-await shot("2-summary");
+await page.screenshot({ path: `${out}/summary.png` });
 await page.getByRole("radiogroup", { name: "Agent name" }).getByRole("radio").first().click();
 await page.getByRole("button", { name: /^Continue/ }).click();
-// Time back: the hours-saved chart from the call.
-await page.getByText("time back").waitFor({ timeout: 20000 });
-await page.waitForTimeout(2200);
-log("savings:", (await page.getByRole("heading", { level: 1 }).innerText()).replace(/\s+/g, " "), "|", (await page.getByRole("figure").innerText()).replace(/\n+/g, " | ").slice(0, 400));
-await page.screenshot({ path: `${out}/savings.png` });
-await page.getByRole("button", { name: /^Continue/ }).click();
+// All set: the celebration.
+await page.getByRole("button", { name: /Let's go/ }).waitFor({ timeout: 15000 });
+await page.waitForTimeout(700);
+log("celebrate:", (await page.locator("main").innerText()).replace(/\n+/g, " | ").slice(0, 200));
+await page.screenshot({ path: `${out}/celebrate.png` });
+await page.getByRole("button", { name: /Let's go/ }).click();
 await page.getByRole("button", { name: /Connect Gmail/ }).click();
 await page.getByRole("heading", { name: "Gmail connected." }).waitFor({ timeout: 40000 });
 await page.waitForTimeout(1200);

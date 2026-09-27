@@ -13,6 +13,7 @@
     "check": "pnpm typecheck && pnpm lint && pnpm test && pnpm build"
   },
   "dependencies": {
+    "canvas-confetti": "^1.9.4",
     "framer-motion": "^13.4.4",
     "jspdf": "^4.2.1",
     "katex": "^0.18.9",
@@ -31,6 +32,7 @@
   "devDependencies": {
     "@playwright/test": "1.51.0",
     "@tailwindcss/postcss": "^4",
+    "@types/canvas-confetti": "^1.9.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

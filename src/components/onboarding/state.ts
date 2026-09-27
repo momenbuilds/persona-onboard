@@ -5,14 +5,15 @@ import { initialEngine, type EngineState } from "@/lib/conversation/engine";
 import type { Artifact } from "@/lib/chat/protocol";
 import type { ChatMessage, InboxEmail, Reminder, Understanding, UnderstandingSource } from "@/lib/schema";
 
-export type Step = "welcome" | "call" | "understanding" | "savings" | "gmail" | "ready" | "dashboard";
+export type Step = "welcome" | "call" | "savings" | "understanding" | "celebrate" | "gmail" | "ready" | "dashboard";
 
 /** The onboarding screens (the dashboard is revealed after "ready"). */
 export const STEPS: { id: Exclude<Step, "dashboard">; label: string }[] = [
   { id: "welcome", label: "Hello" },
   { id: "call", label: "Quick call" },
+  { id: "savings", label: "Your plan" },
   { id: "understanding", label: "About you" },
-  { id: "savings", label: "Time back" },
+  { id: "celebrate", label: "All set" },
   { id: "gmail", label: "Gmail" },
   { id: "ready", label: "Ready" },
 ];
