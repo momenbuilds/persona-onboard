@@ -60,7 +60,8 @@ export type Action =
   | { type: "toggleReminder"; index: number }
   | { type: "addReminder"; reminder: Reminder }
   | { type: "addChat"; message: DashMessage }
-  | { type: "setInbox"; inbox: InboxEmail[] }
+  /** `ifUnused`: skip when the user has already chatted, so emails never change mid-conversation. */
+  | { type: "setInbox"; inbox: InboxEmail[]; ifUnused?: boolean }
   /** The user picked which goal matters most: it becomes the primary goal. */
   | { type: "setPrimaryGoal"; goal: string }
   | { type: "setSuggestedNames"; names: string[] }
@@ -152,6 +153,7 @@ export function reducer(state: OnboardingState, action: Action): OnboardingState
     case "addChat":
       return { ...state, chat: [...state.chat, action.message] };
     case "setInbox":
+      if (action.ifUnused && state.chat.some((m) => m.role === "user")) return state;
       return { ...state, inbox: action.inbox };
     case "setPrimaryGoal": {
       const u = state.understanding;

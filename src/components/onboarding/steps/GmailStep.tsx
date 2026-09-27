@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { ArrowRightIcon, CheckIcon, MailIcon, ShieldIcon, BellIcon } from "@/components/ui/icons";
 import { connectGmailMock } from "@/lib/demo/gmail-mock";
 import { prefetchInbox } from "@/lib/demo/inbox-prefetch";
+import { templateInbox } from "@/lib/demo/template-inbox";
 import type { InboxEmail } from "@/lib/schema";
 import type { Action, OnboardingState } from "../state";
 import { StepHeading } from "./StepHeading";
@@ -42,14 +43,26 @@ export function GmailStep({ state, dispatch }: Props) {
           notes: state.notes,
         })
       : Promise.resolve([] as InboxEmail[]);
-    // Whenever it lands (even after this step), it fills the dashboard's inbox.
-    void inbox.then((emails) => emails.length && dispatch({ type: "setInbox", inbox: emails }));
+    // Whenever it lands (even after this step), it fills the dashboard's inbox,
+    // unless the user has already started chatting about the template's emails.
+    let landed = false;
+    void inbox.then((emails) => {
+      landed = true;
+      if (emails.length) dispatch({ type: "setInbox", inbox: emails, ifUnused: true });
+    });
     await connectGmailMock((stage, text) => {
       if (stage !== "connected") setLabel(text);
     });
     setLabel("reading what's in motion…");
     // Never hold the step for long: show what's ready after a few seconds at most.
     await Promise.race([inbox, new Promise((r) => setTimeout(r, 2500))]);
+    // Never an empty inbox: the template (with a deck about their goal) covers the gap.
+    if (!landed && u && !state.inbox.length) {
+      dispatch({
+        type: "setInbox",
+        inbox: templateInbox({ userName: state.userName, summary: u.summary, primaryGoal: u.primaryGoal, secondaryGoals: u.secondaryGoals }),
+      });
+    }
     setPhase("connected");
     dispatch({ type: "setGmail", status: "connected" });
   }
