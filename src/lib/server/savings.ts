@@ -26,7 +26,8 @@ export async function estimateSavings(said: string, notes?: Record<string, strin
             content: `Estimate how much time a personal AI assistant (it reads email and calendar, drafts replies, sends reminders, plans and summarizes) would save this person each week.
 Return ONLY {"items":[{"task":string,"manualHours":number,"withPersonaHours":number}]} with 3 to 5 items.
 - task: 2-5 words, sentence case, named from their own words (e.g. "Slack and email replies", "School deadlines").
-- manualHours: realistic weekly hours they spend on it today, by hand.
+- Count only the overhead an assistant can take on: finding, sorting, replying, scheduling, planning, remembering and following up. Never the core work itself (attending class, coding, working out, shooting content).
+- manualHours: realistic weekly hours of that overhead today, by hand.
 - withPersonaHours: weekly hours left once the assistant helps. Be conservative: it never removes a task entirely.
 Only tasks they actually mentioned or clearly implied.`,
           },
