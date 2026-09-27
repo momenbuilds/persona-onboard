@@ -1,6 +1,7 @@
 import Image from "next/image";
-import { PersonaLockup } from "@/components/brand/PersonaLogo";
+import { PersonaLockup, PersonaMark } from "@/components/brand/PersonaLogo";
 import { ButtonLink } from "@/components/ui/Button";
+import { ArrowRightIcon } from "@/components/ui/icons";
 import { HeroPhoneDemo } from "./HeroPhoneDemo";
 
 export function Hero() {
@@ -29,12 +30,16 @@ export function Hero() {
         <p className="mt-5 max-w-[26rem] text-pretty text-[18px] leading-relaxed text-muted">
           Start with a quick call. Persona learns what matters to you, then gets to work.
         </p>
-        <ButtonLink href="/start" variant="glass" size="lg" className="mt-9 pl-5 pr-7 text-[18px]">
-          <span aria-hidden className="relative flex h-6 w-6 items-center justify-center">
-            <span className="absolute inset-0 rounded-full bg-[radial-gradient(circle_at_35%_30%,#55555c,#0c0c0e_60%,#000)]" />
-            <span className="absolute inset-[-4px] animate-ping rounded-full bg-black/10" />
+        <ButtonLink href="/start" variant="glass" size="lg" className="group mt-9 gap-3 pl-2.5 pr-6 text-[18px]">
+          {/* A mini Persona orb: glossy sphere + mark, with the Band's LED glow breathing around it. */}
+          <span aria-hidden className="relative flex h-9 w-9 shrink-0 items-center justify-center">
+            <span className="absolute inset-[-3px] animate-led-ring rounded-full border" />
+            <span className="relative flex h-9 w-9 items-center justify-center rounded-full bg-[radial-gradient(circle_at_35%_28%,#5c5c63,#151517_58%,#000)] shadow-[inset_0_1px_1px_rgb(255_255_255/0.28),0_3px_8px_-2px_rgb(0_0_0/0.35)]">
+              <PersonaMark className="h-[15px] w-[15px] text-white" />
+            </span>
           </span>
           Get Started
+          <ArrowRightIcon aria-hidden className="h-5 w-5 transition-transform duration-200 group-hover:translate-x-0.5" />
         </ButtonLink>
         <a
           href="https://app.yourpersona.com/"
