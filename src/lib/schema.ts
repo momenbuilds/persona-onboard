@@ -1,10 +1,16 @@
 import { z } from "zod";
 
 /** A single line in the onboarding call or dashboard chat. */
+/**
+ * Long text is trimmed, not rejected: one long reply earlier in the chat must never
+ * make every later request fail. The hard ceiling still stops abuse.
+ */
+const clipped = (keep: number, ceiling = keep * 10) => z.string().max(ceiling).transform((s) => s.slice(0, keep));
+
 export const ChatMessageSchema = z.object({
   id: z.string(),
   role: z.enum(["persona", "user"]),
-  text: z.string().max(2000),
+  text: clipped(4000),
   via: z.enum(["voice", "text", "sample"]).optional(),
 });
 export type ChatMessage = z.infer<typeof ChatMessageSchema>;
@@ -53,7 +59,7 @@ export type Understanding = z.infer<typeof UnderstandingSchema>;
 export const UnderstandRequestSchema = z.object({
   messages: z.array(ChatMessageSchema).min(1).max(120),
   /** What the voice agent recorded when it wrapped up (userName, needs, goals, routine, details). */
-  notes: z.record(z.string(), z.string().max(2000)).optional(),
+  notes: z.record(z.string(), clipped(2000)).optional(),
 });
 
 export type UnderstandingSource = "deepseek" | "fallback";
@@ -93,7 +99,7 @@ export const ChatRequestSchema = z.object({
     secondaryGoals: z.array(z.string().max(200)).max(6),
     reminders: z.array(ReminderSchema.extend({ added: z.boolean() })).max(40),
     gmail: z.enum(["idle", "connected", "skipped"]),
-    notes: z.record(z.string(), z.string().max(2000)).optional(),
+    notes: z.record(z.string(), clipped(2000)).optional(),
     inbox: z.array(InboxEmailSchema).max(10).optional(),
   }),
   /** The user's local date/time, e.g. "Sunday 27 September 2026, 1:40 am". */

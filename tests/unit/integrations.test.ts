@@ -206,6 +206,38 @@ describe("dashboard AI chat route", () => {
     vi.unstubAllGlobals();
   });
 
+  it("accepts a long earlier reply in the history instead of rejecting the request", async () => {
+    vi.stubEnv("OPENROUTER_API_KEY", "or-key");
+    const sent: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init?: RequestInit) => {
+        sent.push(String(init?.body));
+        return sse(["here's your focus for the next while."]);
+      }),
+    );
+    const longReply = "1. **A long plan item** with plenty of detail. ".repeat(120); // ~5,500 chars
+    const res = await chatRoute(
+      new Request("http://x/api/chat", {
+        method: "POST",
+        body: JSON.stringify({
+          ...body,
+          messages: [
+            { id: "1", role: "user", text: "give me ideas for posts" },
+            { id: "2", role: "persona", text: longReply },
+            { id: "3", role: "user", text: "give me a deck and a chart for my focus" },
+          ],
+        }),
+      }),
+    );
+    expect(res.status).toBe(200);
+    const ev = await events(res);
+    expect(ev.filter((e) => e.t === "delta").map((e) => e.v).join("")).toContain("your focus");
+    expect(ev.some((e) => e.t === "done" && e.source === "deepseek")).toBe(true);
+    // Trimmed on the way to the model, not rejected.
+    expect(sent[0]).not.toContain(longReply);
+  });
+
   it("streams text and turns a reminder block into a validated reminder", async () => {
     vi.stubEnv("OPENROUTER_API_KEY", "test-key");
     const fetchMock = vi.fn().mockResolvedValue(sse(["got it, thurs", "day 9am.\n``", '`reminder\n{"title":"Prep the v2 demo","when":"Thu · 9am"}\n```\n']));
